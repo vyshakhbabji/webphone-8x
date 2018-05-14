@@ -220,6 +220,24 @@ $(function() {
 
     function onAccepted(session) {
 
+        console.log("Session Accepted ....");
+        var remoteStream = new MediaStream();
+        var domElement = document.getElementById('remoteVideo');
+        // session.sessionDescriptionHandler.on('addTrack', function () {
+            var pc = session.sessionDescriptionHandler.peerConnection;
+            pc.getReceivers().forEach(function (receiver) {
+                var track = receiver.track
+                if (track) {
+                    remoteStream.addTrack(track)
+                }
+            });
+        // });
+
+        domElement.srcObject = remoteStream; // video is you html-video element for viewing remote stream
+        domElement.autoplay = true;
+        // domElement.srcObject = remoteStream;
+        // domElement.play();
+
         console.log('EVENT: Accepted', session.request);
         console.log('To', session.request.to.displayName, session.request.to.friendlyName);
         console.log('From', session.request.from.displayName, session.request.from.friendlyName);
@@ -370,27 +388,27 @@ $(function() {
             close();
         });
 
-        session.mediaHandler.on('iceConnection', function() { console.log('Event: ICE: iceConnection'); });
-        session.mediaHandler.on('iceConnectionChecking', function() { console.log('Event: ICE: iceConnectionChecking'); });
-        session.mediaHandler.on('iceConnectionConnected', function() { console.log('Event: ICE: iceConnectionConnected'); });
-        session.mediaHandler.on('iceConnectionCompleted', function() { console.log('Event: ICE: iceConnectionCompleted'); });
-        session.mediaHandler.on('iceConnectionFailed', function() { console.log('Event: ICE: iceConnectionFailed'); });
-        session.mediaHandler.on('iceConnectionDisconnected', function() { console.log('Event: ICE: iceConnectionDisconnected'); });
-        session.mediaHandler.on('iceConnectionClosed', function() { console.log('Event: ICE: iceConnectionClosed'); });
-        session.mediaHandler.on('iceGatheringComplete', function() { console.log('Event: ICE: iceGatheringComplete'); });
-        session.mediaHandler.on('iceGathering', function() { console.log('Event: ICE: iceGathering'); });
-        session.mediaHandler.on('iceCandidate', function() { console.log('Event: ICE: iceCandidate'); });
-        session.mediaHandler.on('userMedia', function() { console.log('Event: ICE: userMedia'); });
-        session.mediaHandler.on('userMediaRequest', function() { console.log('Event: ICE: userMediaRequest'); });
-        session.mediaHandler.on('userMediaFailed', function() { console.log('Event: ICE: userMediaFailed'); });
+        session.sessionDescriptionHandler.on('iceConnection', function() { console.log('Event: ICE: iceConnection'); });
+        session.sessionDescriptionHandler.on('iceConnectionChecking', function() { console.log('Event: ICE: iceConnectionChecking'); });
+        session.sessionDescriptionHandler.on('iceConnectionConnected', function() { console.log('Event: ICE: iceConnectionConnected'); });
+        session.sessionDescriptionHandler.on('iceConnectionCompleted', function() { console.log('Event: ICE: iceConnectionCompleted'); });
+        session.sessionDescriptionHandler.on('iceConnectionFailed', function() { console.log('Event: ICE: iceConnectionFailed'); });
+        session.sessionDescriptionHandler.on('iceConnectionDisconnected', function() { console.log('Event: ICE: iceConnectionDisconnected'); });
+        session.sessionDescriptionHandler.on('iceConnectionClosed', function() { console.log('Event: ICE: iceConnectionClosed'); });
+        session.sessionDescriptionHandler.on('iceGatheringComplete', function() { console.log('Event: ICE: iceGatheringComplete'); });
+        session.sessionDescriptionHandler.on('iceGathering', function() { console.log('Event: ICE: iceGathering'); });
+        session.sessionDescriptionHandler.on('iceCandidate', function() { console.log('Event: ICE: iceCandidate'); });
+        session.sessionDescriptionHandler.on('userMedia', function() { console.log('Event: ICE: userMedia'); });
+        session.sessionDescriptionHandler.on('userMediaRequest', function() { console.log('Event: ICE: userMediaRequest'); });
+        session.sessionDescriptionHandler.on('userMediaFailed', function() { console.log('Event: ICE: userMediaFailed'); });
 
     }
 
     function makeCall(number, homeCountryId) {
 
         homeCountryId = homeCountryId
-                      || (extension && extension.regionalSettings && extension.regionalSettings.homeCountry && extension.regionalSettings.homeCountry.id)
-                      || null;
+            || (extension && extension.regionalSettings && extension.regionalSettings.homeCountry && extension.regionalSettings.homeCountry.id)
+            || null;
 
         var session = webPhone.userAgent.invite(number, {
             media: {

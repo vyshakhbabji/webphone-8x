@@ -175,9 +175,18 @@
             register: true,
             iceCheckingTimeout: this.sipInfo.iceCheckingTimeout || this.sipInfo.iceGatheringTimeout || 500,
             // mediaHandlerFactory: rcMediaHandlerFactory,
-            rtcpMuxPolicy: "negotiate",
-            //disable TCP candidates
-            hackStripTcp:true
+
+            sessionDescriptionHandlerFactoryOptions: {
+                peerConnectionOptions: {
+                    rtcConfiguration:{
+                        rtcpMuxPolicy: 'negotiate'
+                    }
+                },
+                constraints: {
+                    audio: true,
+                    video: false
+                }
+            }
         };
 
 
@@ -341,7 +350,7 @@
         session.on('progress', function(incomingResponse) {
             if (incomingResponse.status_code === 183 && incomingResponse.body) {
                 session.createDialog(incomingResponse, 'UAC');
-                session.mediaHandler.setDescription(incomingResponse).then(function() {
+                session.sessionDescriptionHandler.setDescription(incomingResponse.body).then(function() {
                     session.status = 11; //C.STATUS_EARLY_MEDIA;
                     session.hasAnswer = true;
                 });
@@ -354,8 +363,8 @@
         session.on('cancel', stopPlaying);
         session.on('failed', stopPlaying);
         session.on('replaced', stopPlaying);
-        session.mediaHandler.on('iceConnectionCompleted', stopPlaying);
-        session.mediaHandler.on('iceConnectionFailed', stopPlaying);
+        // session.sessionDescriptionHandler.on('iceConnectionCompleted', stopPlaying);
+        // session.sessionDescriptionHandler.on('iceConnectionFailed', stopPlaying);
 
         function stopPlaying() {
             session.ua.audioHelper.playOutgoing(false);
@@ -367,8 +376,8 @@
             session.removeListener('cancel', stopPlaying);
             session.removeListener('failed', stopPlaying);
             session.removeListener('replaced', stopPlaying);
-            session.mediaHandler.removeListener('iceConnectionCompleted', stopPlaying);
-            session.mediaHandler.removeListener('iceConnectionFailed', stopPlaying);
+            // session.mediaHandler.removeListener('iceConnectionCompleted', stopPlaying);
+            // session.mediaHandler.removeListener('iceConnectionFailed', stopPlaying);
         }
 
         if (session.ua.onSession) session.ua.onSession(session);
@@ -396,22 +405,22 @@
     /*--------------------------------------------------------------------------------------------------------------------*/
 
     function parseRcHeader(session) {
-      var prc = session.request.headers['P-Rc'];
-      if (prc && prc.length) {
-        var rawInviteMsg = prc[0].raw;
-        var parser = new DOMParser();
-        var xmlDoc = parser.parseFromString(rawInviteMsg, 'text/xml');
-        var hdrNode = xmlDoc.getElementsByTagName('Hdr')[0];
+        var prc = session.request.headers['P-Rc'];
+        if (prc && prc.length) {
+            var rawInviteMsg = prc[0].raw;
+            var parser = new DOMParser();
+            var xmlDoc = parser.parseFromString(rawInviteMsg, 'text/xml');
+            var hdrNode = xmlDoc.getElementsByTagName('Hdr')[0];
 
-        if (hdrNode) {
-          session.rcHeaders = {
-            sid: hdrNode.getAttribute('SID'),
-            request: hdrNode.getAttribute('Req'),
-            from: hdrNode.getAttribute('From'),
-            to: hdrNode.getAttribute('To'),
-          };
+            if (hdrNode) {
+                session.rcHeaders = {
+                    sid: hdrNode.getAttribute('SID'),
+                    request: hdrNode.getAttribute('Req'),
+                    from: hdrNode.getAttribute('From'),
+                    to: hdrNode.getAttribute('To'),
+                };
+            }
         }
-      }
     }
 
     /*--------------------------------------------------------------------------------------------------------------------*/
@@ -922,9 +931,9 @@
             .then(function() {
 
                 var referTo = '<' + target.dialog.remote_target.toString() +
-                              '?Replaces=' + target.dialog.id.call_id +
-                              '%3Bto-tag%3D' + target.dialog.id.remote_tag +
-                              '%3Bfrom-tag%3D' + target.dialog.id.local_tag + '>';
+                    '?Replaces=' + target.dialog.id.call_id +
+                    '%3Bto-tag%3D' + target.dialog.id.remote_tag +
+                    '%3Bfrom-tag%3D' + target.dialog.id.local_tag + '>';
 
                 transferOptions = transferOptions || {};
                 transferOptions.extraHeaders = (transferOptions.extraHeaders || [])
