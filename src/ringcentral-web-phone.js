@@ -332,7 +332,11 @@
         session.accept = accept;
         session.hold = hold;
         session.unhold = unhold;
+
         session.dtmf = dtmf;
+
+        session.mute = mute;
+        session.unmute  = unmute;
 
         session.warmTransfer = warmTransfer;
         session.blindTransfer = blindTransfer;
@@ -670,6 +674,39 @@
 
     /*--------------------------------------------------------------------------------------------------------------------*/
 
+
+    function toggleMute (session , mute) {
+        var pc = session.sessionDescriptionHandler.peerConnection;
+        if (pc.getSenders) {
+            pc.getSenders().forEach(function(sender) {
+                if (sender.track) {
+                    sender.track.enabled = !mute;
+                }
+            });
+        }
+    };
+
+
+    function mute (){
+        if (this.state !== this.STATUS_CONNECTED) {
+            this.logger.warn('An acitve call is required to mute audio');
+            return;
+        }
+        this.logger.log('Muting Audio');
+        toggleMute(this, true);
+    };
+
+    function unmute() {
+        if (this.state !== this.STATUS_CONNECTED) {
+            this.logger.warn('An active call is required to unmute audio');
+            return;
+        }
+        this.logger.log('Unmuting Audio');
+        toggleMute(this,false);
+    };
+
+    /*--------------------------------------------------------------------------------------------------------------------*/
+
     /**
      * @this {SIP.UA}
      * @param number
@@ -792,14 +829,18 @@
      * @param {string} dtmf
      * @param {number} duration
      * @return {Promise}
+     * TODO:Add logger
      */
     function dtmf(dtmf, duration) {
         var session = this;
         duration = parseInt(duration) || 1000;
-        var peer = session.mediaHandler.peerConnection;
-        var stream = session.getLocalStreams()[0];
-        var dtmfSender = peer.createDTMFSender(stream.getAudioTracks()[0]);
-        if (dtmfSender !== undefined && dtmfSender.canInsertDTMF) {
+        var pc = session.sessionDescriptionHandler.peerConnection;
+        var senders = pc.getSenders();
+        var audioSender = senders.find(function(sender) {
+            return sender.track && sender.track.kind === 'audio';
+        });
+        dtmfSender = audioSender.dtmf;
+        if (dtmfSender !== undefined && dtmfSender) {
             return dtmfSender.insertDTMF(dtmf, duration);
         }
         throw new Error('Send DTMF failed: ' + (!dtmfSender ? 'no sender' : (!dtmfSender.canInsertDTMF ? 'can\'t insert DTMF' : 'Unknown')));

@@ -223,15 +223,15 @@ $(function() {
         console.log("Session Accepted ....");
         var remoteStream = new MediaStream();
         var domElement = document.getElementById('remoteVideo');
-        // session.sessionDescriptionHandler.on('addTrack', function () {
+        session.sessionDescriptionHandler.on('addTrack', function () {
             var pc = session.sessionDescriptionHandler.peerConnection;
             pc.getReceivers().forEach(function (receiver) {
-                var track = receiver.track
+                var track = receiver.track;
                 if (track) {
                     remoteStream.addTrack(track)
                 }
             });
-        // });
+        });
 
         domElement.srcObject = remoteStream; // video is you html-video element for viewing remote stream
         domElement.autoplay = true;
