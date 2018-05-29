@@ -156,6 +156,10 @@ $(function() {
 
     function onInvite(session) {
 
+
+
+        console.error("WHICH CALL - INCOMING >?");
+
         console.log('EVENT: Invite', session.request);
         console.log('To', session.request.to.displayName, session.request.to.friendlyName);
         console.log('From', session.request.from.displayName, session.request.from.friendlyName);
@@ -177,6 +181,7 @@ $(function() {
             session.accept(acceptOptions)
                 .then(function() {
                     $modal.modal('hide');
+                    addTrack(session);
                     onAccepted(session);
                 })
                 .catch(function(e) { console.error('Accept failed', e.stack || e); });
@@ -218,26 +223,27 @@ $(function() {
 
     }
 
+    function addTrack(session){
+        var remoteStream = new MediaStream();
+        var domElement = document.getElementById('remoteVideo');
+        var pc = session.sessionDescriptionHandler.peerConnection;
+        pc.getReceivers().forEach(function (receiver) {
+            var track = receiver.track;
+            if (track) {
+                remoteStream.addTrack(track)
+            }
+        });
+        domElement.srcObject = remoteStream; // video is you html-video element for viewing remote stream
+        domElement.autoplay = true;
+    }
+
+    // with this session.sessionDescriptionHandler.on('addTrack', function () {  outgoing works but incoming doesnt work
+    // without this  incoming works but outgoing doesnt work
+
+
     function onAccepted(session) {
 
         console.log("Session Accepted ....");
-        var remoteStream = new MediaStream();
-        var domElement = document.getElementById('remoteVideo');
-        session.sessionDescriptionHandler.on('addTrack', function () {
-            var pc = session.sessionDescriptionHandler.peerConnection;
-            pc.getReceivers().forEach(function (receiver) {
-                var track = receiver.track;
-                if (track) {
-                    remoteStream.addTrack(track)
-                }
-            });
-        });
-
-        domElement.srcObject = remoteStream; // video is you html-video element for viewing remote stream
-        domElement.autoplay = true;
-        // domElement.srcObject = remoteStream;
-        // domElement.play();
-
         console.log('EVENT: Accepted', session.request);
         console.log('To', session.request.to.displayName, session.request.to.friendlyName);
         console.log('From', session.request.from.displayName, session.request.from.friendlyName);
@@ -377,6 +383,7 @@ $(function() {
         session.on('replaced', function(newSession) {
             console.log('Event: Replaced: old session', session, 'has been replaced with', newSession);
             close();
+            addTrack(newSession);
             onAccepted(newSession);
         });
         session.on('dtmf', function() { console.log('Event: DTMF'); });
@@ -421,8 +428,14 @@ $(function() {
             homeCountryId: homeCountryId
         });
 
-        onAccepted(session);
 
+        console.error(session);
+        console.error(session.sessionDescriptionHandler);
+
+        session.sessionDescriptionHandler.on('addTrack', function () {
+               addTrack(session);
+               onAccepted(session);
+        });
     }
 
     function makeCallForm() {
@@ -446,7 +459,6 @@ $(function() {
         });
 
         $app.empty().append($form);
-
     }
 
     function makeLoginForm() {

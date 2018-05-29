@@ -173,14 +173,17 @@
             domain: this.sipInfo.domain,
             autostart: true,
             register: true,
-            iceCheckingTimeout: this.sipInfo.iceCheckingTimeout || this.sipInfo.iceGatheringTimeout || 500,
+            // iceCheckingTimeout: this.sipInfo.iceCheckingTimeout || this.sipInfo.iceGatheringTimeout || 500,
             // mediaHandlerFactory: rcMediaHandlerFactory,
+
+            // hackStripTcp : true,
 
             sessionDescriptionHandlerFactoryOptions: {
                 peerConnectionOptions: {
+                    iceCheckingTimeout: this.sipInfo.iceCheckingTimeout || this.sipInfo.iceGatheringTimeout || 500,
                     rtcConfiguration:{
                         rtcpMuxPolicy: 'negotiate'
-                    }
+                    },
                 },
                 constraints: {
                     audio: true,
