@@ -4674,6 +4674,8 @@
                     },
 
                     refer: function(target, options) {
+
+                        console.error("REFER init");
                         options = options || {};
                         var extraHeaders = (options.extraHeaders || []).slice(),
                             withReplaces =

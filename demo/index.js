@@ -433,8 +433,8 @@ $(function() {
         console.error(session.sessionDescriptionHandler);
 
         session.sessionDescriptionHandler.on('addTrack', function () {
-               addTrack(session);
-               onAccepted(session);
+            addTrack(session);
+            onAccepted(session);
         });
     }
 

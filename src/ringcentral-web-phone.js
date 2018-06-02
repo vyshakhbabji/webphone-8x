@@ -92,9 +92,7 @@
                 }
             }
         }
-
         return this;
-
     };
 
     AudioHelper.prototype.loadAudio = function(options) {
@@ -177,6 +175,12 @@
             // mediaHandlerFactory: rcMediaHandlerFactory,
 
             // hackStripTcp : true,
+
+
+            wsServerMaxReconnection: options.wsServerMaxReconnection || 3,
+            connectionRecoveryMaxInterval: options.connectionRecoveryMaxInterval || 60,
+            connectionRecoveryMinInterval: options.connectionRecoveryMinInterval || 2,
+
 
             sessionDescriptionHandlerFactoryOptions: {
                 peerConnectionOptions: {
@@ -370,8 +374,8 @@
         session.on('cancel', stopPlaying);
         session.on('failed', stopPlaying);
         session.on('replaced', stopPlaying);
-        // session.sessionDescriptionHandler.on('iceConnectionCompleted', stopPlaying);
-        // session.sessionDescriptionHandler.on('iceConnectionFailed', stopPlaying);
+        session.sessionDescriptionHandler.on('iceConnectionCompleted', stopPlaying);
+        session.sessionDescriptionHandler.on('iceConnectionFailed', stopPlaying);
 
         function stopPlaying() {
             session.ua.audioHelper.playOutgoing(false);
@@ -383,8 +387,8 @@
             session.removeListener('cancel', stopPlaying);
             session.removeListener('failed', stopPlaying);
             session.removeListener('replaced', stopPlaying);
-            // session.mediaHandler.removeListener('iceConnectionCompleted', stopPlaying);
-            // session.mediaHandler.removeListener('iceConnectionFailed', stopPlaying);
+            session.sessionDescriptionHandler.removeListener('iceConnectionCompleted', stopPlaying);
+            session.sessionDescriptionHandler.removeListener('iceConnectionFailed', stopPlaying);
         }
 
         if (session.ua.onSession) session.ua.onSession(session);
@@ -598,6 +602,7 @@
 
     }
 
+
     /*--------------------------------------------------------------------------------------------------------------------*/
 
     function register(options) {
@@ -647,35 +652,6 @@
         }
 
     }
-
-    /*--------------------------------------------------------------------------------------------------------------------*/
-
-    /**
-     * @private
-     * @param {SIP.Session} session
-     * @param {boolean} flag
-     * @return {Promise}
-     */
-    function setHold(session, flag) {
-        return new Promise(function(resolve, reject) {
-
-            var options = {
-                eventHandlers: {
-                    succeeded: resolve,
-                    failed: reject
-                }
-            };
-
-            if (flag) {
-                session.__hold(options);
-            } else {
-                session.__unhold(options);
-            }
-
-        });
-    }
-
-    /*--------------------------------------------------------------------------------------------------------------------*/
 
 
     function toggleMute (session , mute) {
@@ -849,6 +825,34 @@
         throw new Error('Send DTMF failed: ' + (!dtmfSender ? 'no sender' : (!dtmfSender.canInsertDTMF ? 'can\'t insert DTMF' : 'Unknown')));
     }
 
+
+    /*--------------------------------------------------------------------------------------------------------------------*/
+
+    /**
+     * @private
+     * @param {SIP.Session} session
+     * @param {boolean} flag
+     * @return {Promise}
+     */
+    function setHold(session, flag) {
+        return new Promise(function(resolve, reject) {
+
+            var options = {
+                eventHandlers: {
+                    succeeded: resolve,
+                    failed: reject
+                }
+            };
+
+            if (flag) {
+                session.__hold(options);
+            } else {
+                session.__unhold(options);
+            }
+
+        });
+    }
+
     /*--------------------------------------------------------------------------------------------------------------------*/
 
     /**
@@ -870,7 +874,6 @@
     }
 
     /*--------------------------------------------------------------------------------------------------------------------*/
-
     /**
      * @this {SIP.Session} session
      * @param {string} target
@@ -970,7 +973,7 @@
 
         var session = this;
 
-        return (session.isOnHold() ? Promise.resolve(null) : session.hold())
+        return (session.local_hold ? Promise.resolve(null) : session.hold())
             .then(function() { return delay(300); })
             .then(function() {
 
@@ -990,7 +993,6 @@
             });
 
     }
-
     /*--------------------------------------------------------------------------------------------------------------------*/
 
     /**
@@ -1002,12 +1004,22 @@
     function transfer(target, options) {
 
         var session = this;
+        console.error("sessoion on hold" , session.local_hold);
 
-        return (session.isOnHold() ? Promise.resolve(null) : session.hold())
-            .then(function() { return delay(300); })
-            .then(function() {
-                return session.blindTransfer(target, options);
-            });
+        if(session.local_hold){
+            session.hold();
+        }
+        delay(300);
+        return session.refer(target,options);
+
+        // return (session.local_hold ? Promise.resolve(null) : session.hold())
+        //     .then(function() { return delay(300); })
+        //     .then(function() {
+        //
+        //         console.error("Moving to blind transfer");
+        //         return session.refer(target,options);
+        //         // return session.blindTransfer(target, options);
+        //     });
 
     }
 
